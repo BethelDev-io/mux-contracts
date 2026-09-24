@@ -22,14 +22,6 @@
     "muxRegistry": "",
     "muxSpendingPolicy": "",
     "muxWalletRegistry": ""
-    "muxWalletRegistry": "",
-    "muxRegistry": "",
-    "muxRecovery": "",
-    "muxPolicy": "",
-    "muxSpendingPolicy": ""
-    "muxAccountFactory": "",
-    "muxRegistry": "",
-    "muxPolicy": ""
   },
   "testnet": {
     "muxAccount": "",
@@ -42,14 +34,6 @@
     "muxRegistry": "",
     "muxSpendingPolicy": "",
     "muxWalletRegistry": ""
-    "muxWalletRegistry": "",
-    "muxRegistry": "",
-    "muxRecovery": "",
-    "muxPolicy": "",
-    "muxSpendingPolicy": ""
-    "muxAccountFactory": "",
-    "muxRegistry": "",
-    "muxPolicy": ""
   },
   "mainnet": {
     "muxAccount": "",
@@ -62,13 +46,5 @@
     "muxRegistry": "",
     "muxSpendingPolicy": "",
     "muxWalletRegistry": ""
-    "muxWalletRegistry": "",
-    "muxRegistry": "",
-    "muxRecovery": "",
-    "muxPolicy": "",
-    "muxSpendingPolicy": ""
-    "muxAccountFactory": "",
-    "muxRegistry": "",
-    "muxPolicy": ""
   }
 }
