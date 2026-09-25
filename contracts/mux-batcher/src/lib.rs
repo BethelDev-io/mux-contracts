@@ -995,6 +995,20 @@ mod tests {
         assert_eq!(client.estimate_fees(&50), 5_000);
     }
 
+    #[test
+    // ── Issue #79: estimate_fees ───────────────────────────────────────────────
+
+    #[test]
+    fn test_estimate_fees_returns_fee_per_op_times_count() {
+        let env = Env::default();
+        let contract_id = env.register_contract(None, MuxBatcher);
+        let client = MuxBatcherClient::new(&env, &contract_id);
+
+        assert_eq!(client.estimate_fees(&1), 100);
+        assert_eq!(client.estimate_fees(&10), 1_000);
+        assert_eq!(client.estimate_fees(&50), 5_000);
+    }
+
     #[test]
     fn test_estimate_fees_zero_ops_rejected() {
         let env = Env::default();
@@ -1505,6 +1519,38 @@ mod tests {
         let result = client.simulate_batch(&caller, &ops);
         assert_eq!(result.success_count, 1);
         assert_eq!(result.failure_count, 0);
+    }
+
+    // ── simulate_batch vs execute_batch parity (#825) ─────────────────────────
+    #[test]
+    fn test_simulate_vs_execute_parity() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register_contract(None, MuxBatcher);
+        let client = MuxBatcherClient::new(&env, &contract_id);
+        let caller = Address::generate(&env);
+
+        // Parity 1: Empty batch returns EmptyBatch for both
+        let empty_ops = Vec::new(&env);
+        let sim_empty = client.try_simulate_batch(&caller, &empty_ops);
+        let exec_empty = client.try_execute_batch(&caller, &empty_ops);
+        assert_eq!(sim_empty.unwrap_err().unwrap(), MuxBatcherError::EmptyBatch);
+        assert_eq!(exec_empty.unwrap_err().unwrap(), MuxBatcherError::EmptyBatch);
+
+        // Parity 2: Oversized batch returns BatchTooLarge for both
+        let oversized_ops = make_nop_ops(&env, MAX_BATCH_SIZE + 1);
+        let sim_over = client.try_simulate_batch(&caller, &oversized_ops);
+        let exec_over = client.try_execute_batch(&caller, &oversized_ops);
+        assert_eq!(sim_over.unwrap_err().unwrap(), MuxBatcherError::BatchTooLarge);
+        assert_eq!(exec_over.unwrap_err().unwrap(), MuxBatcherError::BatchTooLarge);
+
+        // Parity 3: In-bound valid batch accepts and returns matching success_count
+        let valid_ops = make_nop_ops(&env, 5);
+        let sim_valid = client.simulate_batch(&caller, &valid_ops);
+        let exec_valid = client.execute_batch(&caller, &valid_ops);
+        assert_eq!(sim_valid.success_count, exec_valid.success_count);
+        assert_eq!(sim_valid.failure_count, 0);
+        assert_eq!(exec_valid.failure_count, 0);
     }
 
     // ── initialize / upgrade (closes #694) ────────────────────────────────────

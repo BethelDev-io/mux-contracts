@@ -266,6 +266,21 @@ impl MuxAccountFactory {
     ///
     /// | Variant | When |
     /// |---------|------|
+
+    ///
+    /// The caller must be `owner`.  `account_address` must differ from `owner`.
+    /// Metadata strings are individually bounded to prevent storage bloat:
+    ///
+    /// | Field | Max bytes | Constant |
+    /// |-------|-----------|----------|
+    /// | `version` | 32 | `MAX_VERSION_LENGTH` |
+    /// | `description` | 256 | `MAX_DESCRIPTION_LENGTH` |
+    /// | `author` | 64 | `MAX_AUTHOR_LENGTH` |
+    ///
+    /// # Errors
+    ///
+    /// | Variant | When |
+    /// |---------|------|
     /// | [`MuxAccountFactoryError::InvalidAccount`] | `account_address == owner` |
     /// | [`MuxAccountFactoryError::TooManyAccounts`] | owner's Accounts vec is at [`MAX_ACCOUNTS_PER_OWNER`] |
     /// | [`MuxAccountFactoryError::MetadataTooLarge`] | any metadata field exceeds its byte limit |
@@ -452,6 +467,18 @@ impl MuxAccountFactory {
         owner: &Address,
         account_address: &Address,
     ) -> Result<(Vec<Address>, bool), MuxAccountFactoryError> {
+
+        let accounts: Vec<Address> = env
+            .storage()
+            .instance()
+            .get(&DataKey::Accounts(owner.clone()))
+            .unwrap_or_else(|| Vec::new(env));
+
+        let already_registered = accounts.contains(account_address);
+        if !already_registered && accounts.len() >= MAX_ACCOUNTS_PER_OWNER {
+            return Err(MuxAccountFactoryError::TooManyAccounts);
+        }
+        Ok((accounts, already_registered))
         let accounts: Vec<Address> = env
             .storage()
             .instance()
@@ -648,6 +675,17 @@ mod tests {
     }
 
     #[test]
+    fn test_deploy_emits_event() {
+        use soroban_sdk::testutils::Events;
+        let (env, client) = setup();
+        let owner = Address::generate(&env);
+        let account_addr = Address::generate(&env);
+        client.deploy_account(&owner, &account_addr);
+        let events = env.events().all();
+        assert_eq!(events.len(), 1);
+        let (_, topics, _) = events.get(0).unwrap();
+        let action = soroban_sdk::Symbol::from_val(&env, &topics.get(1).unwrap());
+        assert_eq!
     fn test_deploy_emits_event() {
         use soroban_sdk::testutils::Events;
         let (env, client) = setup();
